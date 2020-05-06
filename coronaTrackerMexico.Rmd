@@ -1,0 +1,139 @@
+---
+title:  "Coronavirus Tracker Mexico"
+author: "Rene Gutierrez"
+date:   "5/5/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(data.table)
+library(ggplot2)
+```
+
+### Coronavisrus Tracker Mexico
+
+```{r data retrieval}
+# Mexican Data
+## Builds the File Name
+### Gets Today's Date
+datTod <- Sys.Date()
+### Gets the Year
+yea <- sub(paste('.+(?=.{', 2, '})', sep=''), '', year(datTod), perl=T)
+### Gets the Month
+mon <- month(datTod)
+if(mon < 10){
+  mon <- paste0("0",mon)
+}
+### Gets the Day of the Month
+dayMon <- mday(datTod)
+if(dayMon < 10){
+  dayMon <- paste0("0", dayMon)
+}
+### Builds the CSV file name
+filNam <- paste0('./tem2/',yea, mon, dayMon, 'COVID19MEXICO.csv')
+
+## Downloads the Data
+### URL
+urlMex <- "http://187.191.75.115/gobmx/salud/datos_abiertos/datos_abiertos_covid19.zip"
+### Auxilary Temporary Files
+tem1 <- tempfile()
+### Data Download
+download.file(url      = urlMex,
+              destfile = tem1)
+### Data Unzip
+unzip(zipfile = tem1,
+      exdir   = 'D:/Renos/Documents/covidMexico/tem2')
+### Saves the Data Table
+dataMex <- fread(input = filNam,
+                 encoding = "UTF-8",
+                 colClasses=c(FECHA_INGRESO       = 'Date',
+                              FECHA_ACTUALIZACION = 'Date',
+                              FECHA_SINTOMAS      = 'Date',
+                              RESULTADO           = 'factor'))
+### Columns Adjustments
+dataMex$FECHA_DEF[dataMex$FECHA_DEF == '9999-99-99'] <- NA
+dataMex$FECHA_DEF <- as.Date(dataMex$FECHA_DEF)
+```
+
+
+# Pruebas
+
+```{r Pruebas por Dia}
+datPlo <- dataMex[FECHA_INGRESO != Sys.Date(), .N, by = .(FECHA_INGRESO, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_INGRESO, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  ggtitle("Pruebas Realizadas") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Pruebas")
+```
+
+```{r Pruebas por Dia Porcentaje}
+datPlo <- dataMex[FECHA_INGRESO != Sys.Date(), .N, by = .(FECHA_INGRESO, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_INGRESO, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  ggtitle("Pruebas Realizadas") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Proporcion")
+```
+
+```{r Pruebas por Dia Porcentaje (Sin Sospechosos)}
+datPlo <- dataMex[FECHA_INGRESO != Sys.Date() & RESULTADO != 3,
+                  .N,
+                  by = .(FECHA_INGRESO, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_INGRESO, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  scale_fill_manual(values = c("#F8766D", "#00BA38")) +
+  ggtitle("Pruebas Realizadas (Sin Sospechosos)") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Proporcion")
+```
+
+```{r Pruebas por Dia JNSD}
+datPlo <- dataMex[FECHA_INGRESO != Sys.Date() & FECHA_INGRESO >= "2020-03-23",
+                  .N,
+                  by = .(FECHA_INGRESO, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_INGRESO, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  ggtitle("Pruebas Realizadas (Jornada Nacional de Sana Distancia)") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Pruebas") +
+  theme_bw()
+```
+
+```{r Pruebas por Dia Porcentaje JNSD}
+datPlo <- dataMex[FECHA_INGRESO != Sys.Date() & FECHA_INGRESO >= "2020-03-23", .N, by = .(FECHA_INGRESO, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_INGRESO, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  ggtitle("Pruebas Realizadas (Jornada Nacional de Sana Distancia)") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Proporcion") +
+  theme_bw()
+```
+
+
+```{r Pruebas por Dia Porcentaje JNSD Sin Sospechosos}
+datPlo <- dataMex[FECHA_INGRESO != Sys.Date() & RESULTADO != 3 & FECHA_INGRESO >= "2020-03-23",
+                  .N,
+                  by = .(FECHA_INGRESO, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_INGRESO, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  scale_fill_manual(values = c("#F8766D", "#00BA38")) +
+  ggtitle("Pruebas Realizadas (Jornada Nacional de Sana Distancia Sin Sospechosos)") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Proporcion")
+```
+
+# Casos

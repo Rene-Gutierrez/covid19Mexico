@@ -60,7 +60,7 @@ dataMex$FECHA_DEF <- as.Date(dataMex$FECHA_DEF)
 # Pruebas
 
 ```{r Pruebas por Dia}
-datPlo <- dataMex[FECHA_INGRESO != Sys.Date(), .N, by = .(FECHA_INGRESO, RESULTADO)]
+datPlo <- dataMex[, .N, by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
 ggplot(data = datPlo,
        mapping = aes(x = FECHA_INGRESO, y = N, fill = RESULTADO)) +
@@ -71,7 +71,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Pruebas por Dia Porcentaje}
-datPlo <- dataMex[FECHA_INGRESO != Sys.Date(), .N, by = .(FECHA_INGRESO, RESULTADO)]
+datPlo <- dataMex[, .N, by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
 ggplot(data = datPlo,
        mapping = aes(x = FECHA_INGRESO, y = N, fill = RESULTADO)) +
@@ -82,7 +82,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Pruebas por Dia Porcentaje (Sin Sospechosos)}
-datPlo <- dataMex[FECHA_INGRESO != Sys.Date() & RESULTADO != 3,
+datPlo <- dataMex[RESULTADO != 3,
                   .N,
                   by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -96,7 +96,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Pruebas por Dia JNSD}
-datPlo <- dataMex[FECHA_INGRESO != Sys.Date() & FECHA_INGRESO >= "2020-03-23",
+datPlo <- dataMex[FECHA_INGRESO >= "2020-03-23",
                   .N,
                   by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -110,7 +110,9 @@ ggplot(data = datPlo,
 ```
 
 ```{r Pruebas por Dia Porcentaje JNSD}
-datPlo <- dataMex[FECHA_INGRESO != Sys.Date() & FECHA_INGRESO >= "2020-03-23", .N, by = .(FECHA_INGRESO, RESULTADO)]
+datPlo <- dataMex[FECHA_INGRESO >= "2020-03-23",
+                  .N,
+                  by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
 ggplot(data = datPlo,
        mapping = aes(x = FECHA_INGRESO, y = N, fill = RESULTADO)) +
@@ -123,7 +125,7 @@ ggplot(data = datPlo,
 
 
 ```{r Pruebas por Dia Porcentaje JNSD Sin Sospechosos}
-datPlo <- dataMex[FECHA_INGRESO != Sys.Date() & RESULTADO != 3 & FECHA_INGRESO >= "2020-03-23",
+datPlo <- dataMex[RESULTADO != 3 & FECHA_INGRESO >= "2020-03-23",
                   .N,
                   by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -137,3 +139,264 @@ ggplot(data = datPlo,
 ```
 
 # Casos
+
+```{r Casos}
+datPlo <- dataMex[RESULTADO != 2,
+                  .N,
+                  by = .(FECHA_INGRESO, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_INGRESO, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  ggtitle("Casos por Fecha de Ingreso") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+```{r Casos por Dia por Dia JNSD}
+datPlo <- dataMex[RESULTADO != 2 & FECHA_INGRESO >= "2020-03-23",
+                  .N,
+                  by = .(FECHA_INGRESO, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_INGRESO, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  ggtitle("Casos por Fecha de Ingreso (Jornada Nacional de Sana Distancia)") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+# Muertes
+
+```{r Muertes por Dia de Defuncion}
+datPlo <- dataMex[!is.na(FECHA_DEF),
+                  .N,
+                  by = .(FECHA_DEF, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_DEF, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  ggtitle("Muertes por Fecha de Defuncion") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+```{r Proporcion Muertes por Dia de Defuncion}
+datPlo <- dataMex[!is.na(FECHA_DEF),
+                  .N,
+                  by = .(FECHA_DEF, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_DEF, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  ggtitle("Proporcion de Muertes por Fecha de Defuncion") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+```{r Proporcion de Muertes por Dia de Defuncion (Sin Sospechosos)}
+datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO != 3,
+                  .N,
+                  by = .(FECHA_DEF, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_DEF, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  scale_fill_manual(values = c("#F8766D", "#00BA38")) +
+  ggtitle("Muertes por Fecha de Defuncion") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+```{r Muertes por Dia de Defuncion (JNSD)}
+datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_INGRESO >= "2020-03-23",
+                  .N,
+                  by = .(FECHA_DEF, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_DEF, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  ggtitle("Muertes por Fecha de Defuncion (Jornada Nacional de Sana Distancia)") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+```{r Proporcion de Muertes por Dia de Defuncion (JNSD)}
+datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_INGRESO >= "2020-03-23",
+                  .N,
+                  by = .(FECHA_DEF, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_DEF, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  ggtitle("Proporcion de Muertes por Fecha de Defuncion") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+```{r Proporcion de Muertes por Dia de Defuncion (JNSD Sin Sospechosos)}
+datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO != 3 & FECHA_INGRESO >= "2020-03-23",
+                  .N,
+                  by = .(FECHA_DEF, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_DEF, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  scale_fill_manual(values = c("#F8766D", "#00BA38")) +
+  ggtitle("Proporcion de Muertes por Fecha de Defuncion (JNSD Sin Sospechosos)") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+
+# Analisis
+
+## Eliminando el Sesgo de Casos Sospechosos
+
+```{r First Simulation}
+### Number of Siulations
+sim <- 10000
+### Data
+datAna <- dataMex[, .N, by = .(FECHA_INGRESO, RESULTADO)]
+datAna <- datAna[order(RESULTADO)]
+datAna <- dcast(datAna, FECHA_INGRESO ~ RESULTADO)
+datAna <- as.matrix(datAna[, -1])
+datAna <- cbind(datAna, rowSums(datAna, na.rm = TRUE))
+datAna[is.na(datAna)] <- 0
+### Data Size
+m <- nrow(datAna)
+k <- datAna[, 1]
+z <- datAna[, 3]
+n <- datAna[, 4]
+
+### Samples Storage
+sy <- matrix(data = NA,
+             nrow = sim,
+             ncol = m)
+st <- numeric(sim)
+
+### Initializes Theta
+t <-  sum(k) / sum(n)
+y <- numeric(m)
+
+### For Each Simulation
+for(s in 1:sim){
+  ### Samples y
+  for(i in 1:m){
+    ### Checks if there is anythig to sample
+    if(z[i] == 0){
+      y[i] <- k[i]
+    } else {
+      ### Computes the probability of each extra case
+      pro <- dbinom(x = k[i]:(k[i] + z[i]), size = n[i], prob = t, log = TRUE)
+      pro <- exp(pro - max(pro))
+      pro <- pro / sum(pro)
+      ### Samples y
+      y[i] <- sample(x = k[i]:(k[i] + z[i]), size = 1, replace = TRUE, prob = pro)
+    }
+    ### Stores y
+    sy[s, i] <- y[i]
+  }
+  # Samples theta
+  ## Parameters Beta Distribution
+  sha1 <- sum(y) + 1
+  sha2 <- sum(n) - sum(y) + 1
+  ## Samples theta
+  t <- rbeta(n = 1, shape1 = sha1, shape2 = sha2)
+  ## Stores theta
+  st[i] <- t
+}
+```
+
+```{r Plot Estimated Cases}
+# Probability of Ocurrance
+qua <- apply(X = sy, MARGIN = 2, FUN = quantile, probs = seq(0, 1, 0.01))
+# Cases with probability
+acc <- qua
+for(i in 1:100){
+  acc[i + 1, ] = qua[i + 1, ] - qua[i, ]
+}
+acc <- round(acc)
+
+dates <- dataMex[, .N, by = FECHA_INGRESO][order(FECHA_INGRESO), FECHA_INGRESO]
+newDat <- cbind(dates, data.frame(t(acc)))
+colnames(newDat) <- c("date", seq(100,0))
+newDat <- data.table(newDat)
+newDat <- melt(newDat, id.vars = c("date"))
+newDat$variable <- as.numeric(as.character(newDat$variable))
+newDat <- newDat[, ]
+```
+
+```{r First Forecast}
+datPlo <- newDat[order(-variable)]
+ggplot(data = datPlo,
+       mapping = aes(x = date, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  scale_fill_gradient(low = "white", high = "#F8766D") +
+  ggtitle("Estimacion de Casos por Fecha de Ingreso") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+```{r First Forecast (JNSD)}
+datPlo <- newDat[order(variable)]
+datPlo <- newDat[date > "2020-03-23"]
+ggplot(data = datPlo,
+       mapping = aes(x = date, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  scale_fill_gradient(low = "white", high = "#F8766D") +
+  ggtitle("Estimacion de Casos por Fecha de Ingreso") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

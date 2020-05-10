@@ -25,10 +25,16 @@ newDat <- allDat[FECHA_INGRESO >= datJNSD,
        by = .(FECHA_ACTUALIZACION, FECHA_INGRESO)][
          , s := FECHA_ACTUALIZACION - FECHA_INGRESO][
            order(FECHA_INGRESO)][
-             s <= lim][
          , .(FECHA_INGRESO, N, s)]
 newDat <- dcast(newDat, FECHA_INGRESO ~ s, value.var = "N")
 nObs   <- as.matrix(newDat[,2:(lim+2)])
+### Value for n
+maxTest <- allDat[FECHA_INGRESO >= datJNSD & FECHA_ACTUALIZACION == datTod,
+                  .N,
+                  by = .(FECHA_INGRESO)][order(FECHA_INGRESO)][,N]
+## Number of Periods
+m                          <- nrow(nObs)
+nObs[1:(m - lim), lim + 1] <- maxTest[1:(m - lim)]
 n      <- nObs
 ```
 
@@ -55,8 +61,8 @@ mu[2:(lim + 1)]    <- colMeans(n[, 2:(lim + 1)] / n[, 1:lim], na.rm = TRUE)
 ### Value for sigma
 sigma[1]           <- 300^2
 sigma[2:(lim + 1)] <- apply(n[, 2:(lim + 1)] - n[, 1:lim], 2, var, na.rm = TRUE)
-### Value for n
-n[,1] <- apply(n, 1, max, na.rm = TRUE) * mu[1]
+
+n[,1] <- maxTest * mu[1]
 ### # Replaces the Values that are not Missing
 n[!is.na(nObs)] <- nObs[!is.na(nObs)] 
 for(j in 2:(lim + 1)){
@@ -140,7 +146,7 @@ for(sam in 1:sim){ # For Each Simulation
 
 ```{r Plot Estimated Cases}
 # Probability of Ocurrance
-qua <- apply(X = sn, MARGIN = 2, FUN = quantile, probs = seq(0, 0.99, 0.01))
+qua <- apply(X = sn[,,lim + 1], MARGIN = 2, FUN = quantile, probs = seq(0, 0.99, 0.01))
 # Cases with probability
 acc <- qua
 for(i in 1:99){

@@ -68,7 +68,7 @@ for(j in 2:(lim + 1)){
 ### # Replaces the Values that are not Missing
 n[!is.na(nObs)] <- nObs[!is.na(nObs)]  
 # MCMC
-for(sam in 1:sim){ # For Each Simulation
+for(sam in 1:5){ # For Each Simulation
   ## Estimates n
   ### i from 1 to m and j from 2 to s - 1
   for(j in 2:lim){
@@ -131,6 +131,10 @@ for(sam in 1:sim){ # For Each Simulation
   n <- round(n)
   ## Stores n
   sn[sam,,] <- n
+  ### Tests if there is a 0
+  if(prod(n > 0) == 0){
+    print("Negative Tests")
+  }
   
   ## Estimates mu
   ### Mean of mu
@@ -142,16 +146,16 @@ for(sam in 1:sim){ # For Each Simulation
   ## Stores mu
   sm[sam,] <- mu
   
-  # ## Estimates sigma
-  # ### Shape of Sigma
-  # sigSha <- m / 2
-  # ### Scale of Sigma
-  # sigSca <- colSums((n[, 2:(lim + 1)] - t(mu * t(n[, 1:lim])))^2)
-  # ### Samples from a Gamma Distribution
-  # sigma    <- rgamma(n = lim, shape = sigSha, rate = sigSca)
-  # sigma    <- 1 / sigma
-  # ## Stores sigma
-  # ss[sam,] <- sigma
+  ## Estimates sigma
+  ### Shape of Sigma
+  sigSha <- m / 2
+  ### Scale of Sigma
+  sigSca <- colSums((n[, 2:(lim + 1)] - t(mu * t(n[, 1:lim])))^2)
+  ### Samples from a Gamma Distribution
+  sigma  <- rgamma(n = lim, shape = sigSha, rate = sigSca)
+  sigma  <- 1 / sigma
+  ## Stores sigma
+  ss[sam,] <- sigma
   
   ## Estimates alpha
   ### Mean of alpha

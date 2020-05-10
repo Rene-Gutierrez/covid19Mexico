@@ -188,7 +188,7 @@ datPlo <- allDat[FECHA_INGRESO >= datJNSD & FECHA_ACTUALIZACION > datTod - 10 & 
 datPlo <- datPlo[order(FECHA_INGRESO, -FECHA_ACTUALIZACION)]
 ggplot(data = datPlo,
        mapping = aes(x = FECHA_INGRESO, y = N, fill = FECHA_ACTUALIZACION)) +
-  geom_bar(stat = "identity", position = "dodge2")   +
+  geom_bar(stat = "identity", position = position_dodge2(width = 1), width=0.8)   +
   ggtitle("Pruebas Realizadas") +
   xlab("Fecha de Ingreso")  +
   ylab("Numero de Pruebas Realizadas") + 

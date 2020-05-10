@@ -19,7 +19,7 @@ library(ggplot2)
 
 ```{r Datos}
 datJNSD <- "2020-03-23"
-lim <- 28 
+lim     <- 28 
 newDat <- allDat[FECHA_INGRESO >= datJNSD,
                  .N,
        by = .(FECHA_ACTUALIZACION, FECHA_INGRESO)][
@@ -39,92 +39,69 @@ n <- nObs
 ## Number of Periods
 m <- nrow(nObs)
 ## Number of Simulations
-sim <- 100
+sim <- 10000
 ## Samples
-ss <- matrix(data = NA, nrow = sim, ncol = lim)
-sm <- matrix(data = NA, nrow = sim, ncol = lim)
+ss <- matrix(data = NA, nrow = sim, ncol = lim + 1)
+sm <- matrix(data = NA, nrow = sim, ncol = lim + 1)
 sa <- numeric(sim)
 st <- numeric(sim)
 sn <- array(data = NA, dim = c(sim, m, lim + 1))
 ## Chain Initial Values
-### Value for alpha
-temp1 <- apply(n, 1, max, na.rm = TRUE)[8:(lim-4)]
-temp2 <- apply(n, 1, max, na.rm = TRUE)[1:(lim-11)]
-temp3 <- lm(temp1 ~ temp2)
-alpha <- temp3$coefficients[2]
-### Value for tao
-tao   <- sqrt(sum((temp3$residuals)^2) / length(temp1))
+mu    <- numeric(lim + 1)
+sigma <- numeric(lim + 1)
 ### Value for mu
-mu    <- colMeans(n[, 2:(lim + 1)] / n[, 1:lim], na.rm = TRUE)
+mu[1]              <- 1/3
+mu[2:(lim + 1)]    <- colMeans(n[, 2:(lim + 1)] / n[, 1:lim], na.rm = TRUE)
 ### Value for sigma
-sigma <- apply(n[, 2:(lim + 1)] - n[, 1:lim], 2, var, na.rm = TRUE)
+sigma[1]           <- 300^2
+sigma[2:(lim + 1)] <- apply(n[, 2:(lim + 1)] - n[, 1:lim], 2, var, na.rm = TRUE)
 ### Value for n
-n[,1] <- apply(n, 1, max, na.rm = TRUE) / 3
+n[,1] <- apply(n, 1, max, na.rm = TRUE) * mu[1]
 ### # Replaces the Values that are not Missing
 n[!is.na(nObs)] <- nObs[!is.na(nObs)] 
 for(j in 2:(lim + 1)){
-  n[, j] <- n[, j - 1] * mu[j - 1]
+  n[, j] <- n[, j - 1] * mu[j]
 }
 ### # Replaces the Values that are not Missing
-n[!is.na(nObs)] <- nObs[!is.na(nObs)]  
+n[!is.na(nObs)] <- nObs[!is.na(nObs)]
 # MCMC
-for(sam in 1:5){ # For Each Simulation
+for(sam in 1:sim){ # For Each Simulation
   ## Estimates n
   ### i from 1 to m and j from 2 to s - 1
   for(j in 2:lim){
       ### # Computes the Variances
-      nvar <- 1 / (1 / sigma[j - 1] + mu[j]^2 / sigma[j])
+      nvar <- 1 / (1 / sigma[j] + mu[j + 1]^2 / sigma[j + 1])
       ### # Computes the means 
-      nmea <- mu[j - 1] * n[,j] / sigma[j - 1] + mu[j] * n[, j + 1] / sigma[j]
+      nmea <- mu[j] * n[,j - 1] / sigma[j] + (n[, j + 1] / mu[j + 1]) * mu[j + 1]^2 / sigma[j + 1]
       nmea <- nmea * nvar
       ### # Samples
-      n[, j] <- rnorm(m, mean = nmea, sd = sqrt(nvar))
+      nTemp  <- rnorm(m, mean = nmea, sd = sqrt(nvar))
+      n[nTemp > 0, j] <- nTemp[nTemp > 0]
       ### # Replaces the Values that are not Missing
-      n[!is.na(nObs)] <- nObs[!is.na(nObs)]  
+      n[!is.na(nObs)] <- nObs[!is.na(nObs)]
+      ### # Removes Negatives
+      n[n < 0] <- sn[sam - 1,,][n < 0]
   }
   ### i from 1 to m and j = s
   ### # Computes the Variances
-  nvar <- sigma[lim]
+  nvar <- 1 / (1 / sigma[lim + 1] + mu[1]^2 / sigma[1])
   ### # Computes the Means
-  nmea <- mu[lim] * n[, lim]
+  nmea <- mu[lim + 1] * n[,lim] / sigma[lim + 1] + (n[, 1] / mu[1]) * mu[1]^2 / sigma[1]
+  nmea <- nmea * nvar
   ### # Samples
-  n[, lim + 1] <- rnorm(m, mean = nmea, sd = sqrt(nvar))
+  nTemp  <- rnorm(m, mean = nmea, sd = sqrt(nvar))
+  n[nTemp > 0, lim + 1] <- nTemp[nTemp > 0]
   ### # Replaces the Values that are not Missing
   n[!is.na(nObs)] <- nObs[!is.na(nObs)]
-  ### i = 8:(m-7) from 1 to m and j = 0
-  for(i in 8:(m - 7)){
-    ### # Computes the Variances
-    nvar <- 1 / (1 / tao + alpha^2 / tao + mu[1]^2 / sigma[1])
-    ### # Computes the means
-    nmea <- alpha * n[i - 7, 1] / tao + (n[i + 7, 1] / alpha) * (alpha ^ 2 / tao) + (n[i, 2] / mu[1]) * (mu[1]^2 / sigma[1])
-    nmea <- nmea * nvar
-    ### # Samples
-    n[i, 1] <- rnorm(1, mean = nmea, sd = sqrt(nvar))
-  }
-  ### # Replaces the Values that are not Missing
-  n[!is.na(nObs)] <- nObs[!is.na(nObs)]
-  ### i = 1:7 from 1 to m and j = 0
-  for(i in 1:7){
-    ### # Computes the Variances
-    nvar <- 1 / (alpha^2 / tao + mu[1]^2 / sigma[1])
-    ### # Computes the means
-    nmea <- (n[i + 7, 1] / alpha) * (alpha ^ 2 / tao) + (n[i, 2] / mu[1]) * (mu[1]^2 / sigma[1])
-    nmea <- nmea * nvar
-    ### # Samples
-    n[i, 1] <- rnorm(1, mean = nmea, sd = sqrt(nvar))
-  }
-  ### # Replaces the Values that are not Missing
-  n[!is.na(nObs)] <- nObs[!is.na(nObs)]
-  ### i = (m-6):m from 1 to m and j = 0
-  for(i in (m-6):m){
-    ### # Computes the Variances
-    nvar <- 1 / (1 / tao + mu[1]^2 / sigma[1])
-    ### # Computes the means
-    nmea <- alpha * n[i - 7, 1] / tao + (n[i, 2] / mu[1]) * (mu[1]^2 / sigma[1])
-    nmea <- nmea * nvar
-    ### # Samples
-    n[i, 1] <- rnorm(1, mean = nmea, sd = sqrt(nvar))
-  }
+  ### i from 1 to m and j = 0
+  ### # Computes the Variances
+  nvar <- 1 / (1 / sigma[1] + mu[2]^2 / sigma[2])
+  ### # Computes the means 
+  nmea <- mu[1] * n[,lim + 1] / sigma[1] + (n[, 2] / mu[2]) * mu[2]^2 / sigma[2]
+  nmea <- nmea * nvar
+  ### # Samples
+  nTemp  <- rnorm(m, mean = nmea, sd = sqrt(nvar))
+  n[nTemp > 0, 1] <- nTemp[nTemp > 0]
   ### # Replaces the Values that are not Missing
   n[!is.na(nObs)] <- nObs[!is.na(nObs)]
   ### Rounds all the numbers
@@ -138,27 +115,56 @@ for(sam in 1:5){ # For Each Simulation
   
   ## Estimates mu
   ### Mean of mu
-  muMea <- colSums(n[,1:lim] * n[,2:(lim + 1)]) / colSums(n[,1:lim]^2)
+  muMea <- c(sum(n[,1] * n[,lim + 1] / sum(n[,lim + 1]^2)),
+             colSums(n[,1:lim] * n[,2:(lim + 1)]) / colSums(n[,1:lim]^2))
   ### Variance of mu
   muVar <- sigma / colSums(n[,1:lim]^2)
   ### Samples mu
-  mu <- rnorm(n = lim, mean = muMea, sd = sqrt(muVar))
+  mu <- rnorm(n = lim + 1, mean = muMea, sd = sqrt(muVar))
   ## Stores mu
   sm[sam,] <- mu
-  
+
   ## Estimates sigma
   ### Shape of Sigma
-  sigSha <- m / 2
+  sigSha <- m / 2 - 1
   ### Scale of Sigma
-  sigSca <- colSums((n[, 2:(lim + 1)] - t(mu * t(n[, 1:lim])))^2)
+  sigSca <- c(sum((n[,1] - mu[1] * n[, lim + 1])^2),
+              colSums((n[, 2:(lim + 1)] - t(mu[2:(lim + 1)] * t(n[, 1:lim])))^2)) / 2
   ### Samples from a Gamma Distribution
-  sigma  <- rgamma(n = lim, shape = sigSha, rate = sigSca)
+  sigma  <- rgamma(n = lim + 1, shape = sigSha, rate = sigSca)
   sigma  <- 1 / sigma
   ## Stores sigma
   ss[sam,] <- sigma
-  
-  ## Estimates alpha
-  ### Mean of alpha
-  
 }
+```
+
+```{r Plot Estimated Cases}
+# Probability of Ocurrance
+qua <- apply(X = sn, MARGIN = 2, FUN = quantile, probs = seq(0, 0.99, 0.01))
+# Cases with probability
+acc <- qua
+for(i in 1:99){
+  acc[i + 1, ] = qua[i + 1, ] - qua[i, ]
+}
+acc <- round(acc)
+
+dates <- newDat[order(FECHA_INGRESO), FECHA_INGRESO]
+newDat <- cbind(dates, data.frame(t(acc)))
+colnames(newDat) <- c("date", seq(99,0))
+newDat <- data.table(newDat)
+newDat <- melt(newDat, id.vars = c("date"))
+newDat$variable <- as.numeric(as.character(newDat$variable))
+newDat <- newDat[, ]
+```
+
+```{r First Forecast}
+datPlo <- newDat[order(-variable)  & date > "2020-01-01"]
+ggplot(data = datPlo,
+       mapping = aes(x = date, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  scale_fill_gradient(low = "white", high = "#F8766D") +
+  ggtitle("Estimacion de Pruebas  por Fecha de Ingreso") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
 ```

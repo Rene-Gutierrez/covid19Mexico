@@ -6,14 +6,15 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE)
 library(data.table)
 library(ggplot2)
 ```
 
 ### Coronavisrus Tracker Mexico
 
-```{r data Organization}
+```{r data retrieval}
+state = c(9)
 # Jornada Nacional de Sana Distancia
 datJNSD <- "2020-03-23"
 # First Date of Data Colection
@@ -27,19 +28,6 @@ if(hour(laTim) < 18){
 } else {
   datTod <- Sys.Date()
 }
-# ### Gets the Year
-# yea <- sub(paste('.+(?=.{', 2, '})', sep=''), '', year(datTod), perl=T)
-# ### Gets the Month
-# mon <- month(datTod)
-# if(mon < 10){
-#   mon <- paste0("0",mon)
-# }
-# ### Gets the Day of the Month
-# dayMon <- mday(datTod)
-# if(dayMon < 10){
-#   dayMon <- paste0("0", dayMon)
-# }
-### Builds the CSV file name
 filPre <- './tem2/'
 filSuf <- 'COVID19MEXICO.csv'
 
@@ -74,7 +62,6 @@ for(i in 1:numDay){
   allDat <- rbind(allDat, dataMex)
 }
 
-
 # Data Adjustments for the Last Date
 ## Date Adjustments
 dataMex$FECHA_DEF[dataMex$FECHA_DEF == '9999-99-99'] <- NA
@@ -94,11 +81,10 @@ levels(res) <- c("Positivo", "Negativo", "Sospechoso")
 allDat$RESULTADO <- res
 ```
 
-
 # Pruebas
 
 ```{r Pruebas por Dia}
-datPlo <- dataMex[FECHA_INGRESO > "2020-01-01",
+datPlo <- dataMex[FECHA_INGRESO > "2020-01-01" & ENTIDAD_UM == state,
                   .N,
                   by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -111,7 +97,9 @@ ggplot(data = datPlo,
 ```
 
 ```{r Pruebas por Dia Porcentaje}
-datPlo <- dataMex[FECHA_INGRESO > "2020-01-01", .N, by = .(FECHA_INGRESO, RESULTADO)]
+datPlo <- dataMex[FECHA_INGRESO > "2020-01-01" & ENTIDAD_UM == state,
+                  .N,
+                  by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
 ggplot(data = datPlo,
        mapping = aes(x = FECHA_INGRESO, y = N, fill = RESULTADO)) +
@@ -122,7 +110,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Pruebas por Dia Porcentaje (Sin Sospechosos)}
-datPlo <- dataMex[RESULTADO != "Sospechoso" & FECHA_INGRESO > "2020-01-01",
+datPlo <- dataMex[RESULTADO != "Sospechoso" & FECHA_INGRESO > "2020-01-01" & ENTIDAD_UM == state,
                   .N,
                   by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -136,7 +124,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Pruebas por Dia JNSD}
-datPlo <- dataMex[FECHA_INGRESO >= "2020-03-23" & FECHA_INGRESO > "2020-01-01",
+datPlo <- dataMex[FECHA_INGRESO >= "2020-03-23" & FECHA_INGRESO > "2020-01-01" & ENTIDAD_UM == state,
                   .N,
                   by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -150,7 +138,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Pruebas por Dia Porcentaje JNSD}
-datPlo <- dataMex[FECHA_INGRESO >= "2020-03-23",
+datPlo <- dataMex[FECHA_INGRESO >= "2020-03-23" & ENTIDAD_UM == state,
                   .N,
                   by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -165,7 +153,7 @@ ggplot(data = datPlo,
 
 
 ```{r Pruebas por Dia Porcentaje JNSD Sin Sospechosos}
-datPlo <- dataMex[RESULTADO != "Sospechoso" & FECHA_INGRESO >= "2020-03-23",
+datPlo <- dataMex[RESULTADO != "Sospechoso" & FECHA_INGRESO >= "2020-03-23" & ENTIDAD_UM == state,
                   .N,
                   by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -181,7 +169,7 @@ ggplot(data = datPlo,
 ## Evolucion de las Pruebas
 
 ```{r Pruebas por Dia (Ultimos 30 Dias)}
-datPlo <- allDat[FECHA_INGRESO > datTod - 56 & FECHA_ACTUALIZACION > datTod - 10,
+datPlo <- allDat[FECHA_INGRESO > datTod - 56 & FECHA_ACTUALIZACION > datTod - 10 & ENTIDAD_UM == state,
                  .N,
                  by = .(FECHA_INGRESO, FECHA_ACTUALIZACION)]
 datPlo <- datPlo[order(FECHA_INGRESO, -FECHA_ACTUALIZACION)]
@@ -194,7 +182,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Pruebas por Dia (Ultimos 30 Dias JNSD)}
-datPlo <- allDat[FECHA_INGRESO >= datJNSD & FECHA_ACTUALIZACION > datTod - 10,
+datPlo <- allDat[FECHA_INGRESO >= datJNSD & FECHA_ACTUALIZACION > datTod - 10 & ENTIDAD_UM == state,
                  .N,
                  by = .(FECHA_INGRESO, FECHA_ACTUALIZACION)]
 datPlo <- datPlo[order(FECHA_INGRESO, -FECHA_ACTUALIZACION)]
@@ -207,8 +195,9 @@ ggplot(data = datPlo,
   theme(legend.position = "none")
 ```
 
+
 ```{r Pruebas por Dia y Resultado (Ultimos 15 Dias)}
-datPlo <- allDat[FECHA_INGRESO > datTod - 28 & FECHA_ACTUALIZACION > datTod - 10 & RESULTADO != "Sospechoso",
+datPlo <- allDat[FECHA_INGRESO > datTod - 28 & FECHA_ACTUALIZACION > datTod - 10 & RESULTADO != "Sospechoso"  & ENTIDAD_UM == state,
                  .N,
                  by = .(FECHA_INGRESO, FECHA_ACTUALIZACION, RESULTADO)]
 datPlo <- datPlo[order(FECHA_INGRESO, -FECHA_ACTUALIZACION)]
@@ -223,7 +212,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Sospechosos por Fecha de Ingreso y Actualizacion (Ultimos 28 Dias)}
-datPlo <- allDat[FECHA_INGRESO > datTod - 28 & FECHA_ACTUALIZACION > datTod - 10 & RESULTADO == "Sospechoso",
+datPlo <- allDat[FECHA_INGRESO > datTod - 28 & FECHA_ACTUALIZACION > datTod - 10 & RESULTADO == "Sospechoso" & ENTIDAD_UM == state,
                  .N,
                  by = .(FECHA_INGRESO, FECHA_ACTUALIZACION, RESULTADO)]
 datPlo <- datPlo[order(FECHA_INGRESO, -FECHA_ACTUALIZACION)]
@@ -240,7 +229,7 @@ ggplot(data = datPlo,
 # Casos
 
 ```{r Casos}
-datPlo <- dataMex[RESULTADO != "Negativo"  & FECHA_INGRESO > "2020-01-01",
+datPlo <- dataMex[RESULTADO != "Negativo"  & FECHA_INGRESO > "2020-01-01" & ENTIDAD_UM == state,
                   .N,
                   by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -254,7 +243,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Casos por Dia por Dia JNSD}
-datPlo <- dataMex[RESULTADO != "Negativo" & FECHA_INGRESO >= "2020-03-23",
+datPlo <- dataMex[RESULTADO != "Negativo" & FECHA_INGRESO >= "2020-03-23" & ENTIDAD_UM == state,
                   .N,
                   by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -270,7 +259,7 @@ ggplot(data = datPlo,
 # Muertes
 
 ```{r Muertes por Dia de Defuncion}
-datPlo <- dataMex[!is.na(FECHA_DEF),
+datPlo <- dataMex[!is.na(FECHA_DEF) & ENTIDAD_UM == state,
                   .N,
                   by = .(FECHA_DEF, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -284,7 +273,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Proporcion Muertes por Dia de Defuncion}
-datPlo <- dataMex[!is.na(FECHA_DEF),
+datPlo <- dataMex[!is.na(FECHA_DEF) & ENTIDAD_UM == state,
                   .N,
                   by = .(FECHA_DEF, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -298,7 +287,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Proporcion de Muertes por Dia de Defuncion (Sin Sospechosos)}
-datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO != "Sospechoso",
+datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO != "Sospechoso" & ENTIDAD_UM == state,
                   .N,
                   by = .(FECHA_DEF, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -313,7 +302,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Muertes por Dia de Defuncion (JNSD)}
-datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_INGRESO >= "2020-03-23",
+datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_INGRESO >= "2020-03-23" & ENTIDAD_UM == state,
                   .N,
                   by = .(FECHA_DEF, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -327,7 +316,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Proporcion de Muertes por Dia de Defuncion (JNSD)}
-datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_INGRESO >= "2020-03-23",
+datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_INGRESO >= "2020-03-23" & ENTIDAD_UM == state,
                   .N,
                   by = .(FECHA_DEF, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -341,7 +330,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Proporcion de Muertes por Dia de Defuncion (JNSD Sin Sospechosos)}
-datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO != "Sospechoso" & FECHA_INGRESO >= "2020-03-23",
+datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO != "Sospechoso" & FECHA_INGRESO >= "2020-03-23" & ENTIDAD_UM == state,
                   .N,
                   by = .(FECHA_DEF, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -354,8 +343,6 @@ ggplot(data = datPlo,
   ylab("Casos") +
   theme_bw()
 ```
-
-
 
 
 

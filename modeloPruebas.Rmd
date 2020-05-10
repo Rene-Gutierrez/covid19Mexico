@@ -1,0 +1,160 @@
+---
+title:  "Modelo Pruebas por Dia"
+author: "Rene Gutierrez"
+date:   "5/5/2020"
+output: html_document
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(data.table)
+library(ggplot2)
+```
+
+### Coronavisrus Tracker Mexico
+
+# Analisis
+
+## Modelo de Pruebas por Dia
+
+```{r Datos}
+datJNSD <- "2020-03-23"
+lim <- 28 
+newDat <- allDat[FECHA_INGRESO >= datJNSD,
+                 .N,
+       by = .(FECHA_ACTUALIZACION, FECHA_INGRESO)][
+         , s := FECHA_ACTUALIZACION - FECHA_INGRESO][
+           order(FECHA_INGRESO)][
+             s <= lim][
+         , .(FECHA_INGRESO, N, s)]
+newDat <- dcast(newDat, FECHA_INGRESO ~ s, value.var = "N")
+nObs   <- as.matrix(newDat[,2:(lim+2)])
+n      <- nObs
+```
+
+```{r Simulation Model 1}
+# Set-Up
+## n Initialization
+n <- nObs
+## Number of Periods
+m <- nrow(nObs)
+## Number of Simulations
+sim <- 100
+## Samples
+ss <- matrix(data = NA, nrow = sim, ncol = lim)
+sm <- matrix(data = NA, nrow = sim, ncol = lim)
+sa <- numeric(sim)
+st <- numeric(sim)
+sn <- array(data = NA, dim = c(sim, m, lim + 1))
+## Chain Initial Values
+### Value for alpha
+temp1 <- apply(n, 1, max, na.rm = TRUE)[8:(lim-4)]
+temp2 <- apply(n, 1, max, na.rm = TRUE)[1:(lim-11)]
+temp3 <- lm(temp1 ~ temp2)
+alpha <- temp3$coefficients[2]
+### Value for tao
+tao   <- sqrt(sum((temp3$residuals)^2) / length(temp1))
+### Value for mu
+mu    <- colMeans(n[, 2:(lim + 1)] / n[, 1:lim], na.rm = TRUE)
+### Value for sigma
+sigma <- apply(n[, 2:(lim + 1)] - n[, 1:lim], 2, var, na.rm = TRUE)
+### Value for n
+n[,1] <- apply(n, 1, max, na.rm = TRUE) / 3
+### # Replaces the Values that are not Missing
+n[!is.na(nObs)] <- nObs[!is.na(nObs)] 
+for(j in 2:(lim + 1)){
+  n[, j] <- n[, j - 1] * mu[j - 1]
+}
+### # Replaces the Values that are not Missing
+n[!is.na(nObs)] <- nObs[!is.na(nObs)]  
+# MCMC
+for(sam in 1:sim){ # For Each Simulation
+  ## Estimates n
+  ### i from 1 to m and j from 2 to s - 1
+  for(j in 2:lim){
+      ### # Computes the Variances
+      nvar <- 1 / (1 / sigma[j - 1] + mu[j]^2 / sigma[j])
+      ### # Computes the means 
+      nmea <- mu[j - 1] * n[,j] / sigma[j - 1] + mu[j] * n[, j + 1] / sigma[j]
+      nmea <- nmea * nvar
+      ### # Samples
+      n[, j] <- rnorm(m, mean = nmea, sd = sqrt(nvar))
+      ### # Replaces the Values that are not Missing
+      n[!is.na(nObs)] <- nObs[!is.na(nObs)]  
+  }
+  ### i from 1 to m and j = s
+  ### # Computes the Variances
+  nvar <- sigma[lim]
+  ### # Computes the Means
+  nmea <- mu[lim] * n[, lim]
+  ### # Samples
+  n[, lim + 1] <- rnorm(m, mean = nmea, sd = sqrt(nvar))
+  ### # Replaces the Values that are not Missing
+  n[!is.na(nObs)] <- nObs[!is.na(nObs)]
+  ### i = 8:(m-7) from 1 to m and j = 0
+  for(i in 8:(m - 7)){
+    ### # Computes the Variances
+    nvar <- 1 / (1 / tao + alpha^2 / tao + mu[1]^2 / sigma[1])
+    ### # Computes the means
+    nmea <- alpha * n[i - 7, 1] / tao + (n[i + 7, 1] / alpha) * (alpha ^ 2 / tao) + (n[i, 2] / mu[1]) * (mu[1]^2 / sigma[1])
+    nmea <- nmea * nvar
+    ### # Samples
+    n[i, 1] <- rnorm(1, mean = nmea, sd = sqrt(nvar))
+  }
+  ### # Replaces the Values that are not Missing
+  n[!is.na(nObs)] <- nObs[!is.na(nObs)]
+  ### i = 1:7 from 1 to m and j = 0
+  for(i in 1:7){
+    ### # Computes the Variances
+    nvar <- 1 / (alpha^2 / tao + mu[1]^2 / sigma[1])
+    ### # Computes the means
+    nmea <- (n[i + 7, 1] / alpha) * (alpha ^ 2 / tao) + (n[i, 2] / mu[1]) * (mu[1]^2 / sigma[1])
+    nmea <- nmea * nvar
+    ### # Samples
+    n[i, 1] <- rnorm(1, mean = nmea, sd = sqrt(nvar))
+  }
+  ### # Replaces the Values that are not Missing
+  n[!is.na(nObs)] <- nObs[!is.na(nObs)]
+  ### i = (m-6):m from 1 to m and j = 0
+  for(i in (m-6):m){
+    ### # Computes the Variances
+    nvar <- 1 / (1 / tao + mu[1]^2 / sigma[1])
+    ### # Computes the means
+    nmea <- alpha * n[i - 7, 1] / tao + (n[i, 2] / mu[1]) * (mu[1]^2 / sigma[1])
+    nmea <- nmea * nvar
+    ### # Samples
+    n[i, 1] <- rnorm(1, mean = nmea, sd = sqrt(nvar))
+  }
+  ### # Replaces the Values that are not Missing
+  n[!is.na(nObs)] <- nObs[!is.na(nObs)]
+  ### Rounds all the numbers
+  n <- round(n)
+  ## Stores n
+  sn[sam,,] <- n
+  
+  ## Estimates mu
+  ### Mean of mu
+  muMea <- colSums(n[,1:lim] * n[,2:(lim + 1)]) / colSums(n[,1:lim]^2)
+  ### Variance of mu
+  muVar <- sigma / colSums(n[,1:lim]^2)
+  ### Samples mu
+  mu <- rnorm(n = lim, mean = muMea, sd = sqrt(muVar))
+  ## Stores mu
+  sm[sam,] <- mu
+  
+  # ## Estimates sigma
+  # ### Shape of Sigma
+  # sigSha <- m / 2
+  # ### Scale of Sigma
+  # sigSca <- colSums((n[, 2:(lim + 1)] - t(mu * t(n[, 1:lim])))^2)
+  # ### Samples from a Gamma Distribution
+  # sigma    <- rgamma(n = lim, shape = sigSha, rate = sigSca)
+  # sigma    <- 1 / sigma
+  # ## Stores sigma
+  # ss[sam,] <- sigma
+  
+  ## Estimates alpha
+  ### Mean of alpha
+  
+}
+```

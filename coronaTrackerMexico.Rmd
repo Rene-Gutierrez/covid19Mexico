@@ -187,7 +187,7 @@ datPlo <- allDat[FECHA_INGRESO > datTod - 56 & FECHA_ACTUALIZACION > datTod - 10
 datPlo <- datPlo[order(FECHA_INGRESO, -FECHA_ACTUALIZACION)]
 ggplot(data = datPlo,
        mapping = aes(x = FECHA_INGRESO, y = N, fill = FECHA_ACTUALIZACION)) +
-  geom_bar(stat = "identity", position = "dodge")   +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width=0.8)   +
   ggtitle("Pruebas Realizadas") +
   xlab("Fecha de Ingreso")  +
   ylab("Numero de Pruebas Realizadas")
@@ -200,7 +200,7 @@ datPlo <- allDat[FECHA_INGRESO >= datJNSD & FECHA_ACTUALIZACION > datTod - 10,
 datPlo <- datPlo[order(FECHA_INGRESO, -FECHA_ACTUALIZACION)]
 ggplot(data = datPlo,
        mapping = aes(x = FECHA_INGRESO, y = N, fill = FECHA_ACTUALIZACION)) +
-  geom_bar(stat = "identity", position = "dodge2")   +
+  geom_bar(stat = "identity", position = position_dodge2(width = 1), width=0.8)   +
   ggtitle("Pruebas Realizadas") +
   xlab("Fecha de Ingreso")  +
   ylab("Numero de Pruebas Realizadas") + 
@@ -355,13 +355,60 @@ ggplot(data = datPlo,
   theme_bw()
 ```
 
+```{r Muertes por Edad (Sin Sospechosas)}
+datPlo <- allDat[FECHA_ACTUALIZACION == datTod & RESULTADO == "Positivo" & !is.na(FECHA_DEF),
+                 .N,
+                 by = .(EDAD)][
+                   order(EDAD)]
+ggplot(data = datPlo,
+       mapping = aes(x = EDAD, y = N)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Muertes por Edad (Sin Sospechosas)") +
+  xlab("Edad")  +
+  ylab("Numero de Muertes") +
+  theme_bw()
+```
 
+```{r Muertes por Edad (Con Sospechosas)}
+datPlo <- allDat[FECHA_ACTUALIZACION == datTod & RESULTADO != "Negativo" & !is.na(FECHA_DEF),
+                 .N,
+                 by = .(EDAD)][
+                   order(EDAD)]
+ggplot(data = datPlo,
+       mapping = aes(x = EDAD, y = N)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Muertes por Edad (Con Sospechosas)") +
+  xlab("Edad")  +
+  ylab("Numero de Muertes") +
+  theme_bw()
+```
 
+```{r Muertes por Edad Negativos}
+datPlo <- allDat[FECHA_ACTUALIZACION == datTod & RESULTADO == "Negativo" & !is.na(FECHA_DEF),
+                 .N,
+                 by = .(EDAD)][
+                   order(EDAD)]
+ggplot(data = datPlo,
+       mapping = aes(x = EDAD, y = N)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Muertes por Edad (Sin Sospechosas)") +
+  xlab("Edad")  +
+  ylab("Numero de Muertes") +
+  theme_bw()
+```
 
-
-
-
-
+```{r Muertes Confirmadas Obesidad}
+datPlo <- allDat[FECHA_ACTUALIZACION == datTod & !is.na(FECHA_DEF),
+                 .N,
+                 by = .(OBESIDAD, RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = EDAD, y = N)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Muertes por Edad (Sin Sospechosas)") +
+  xlab("Edad")  +
+  ylab("Numero de Muertes") +
+  theme_bw()
+```
 
 
 

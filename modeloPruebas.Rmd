@@ -14,7 +14,7 @@ library(ggplot2)
 ### Coronavisrus Tracker Mexico
 
 # Analisis
-
+ 
 ## Modelo de Pruebas por Dia
 
 ```{r Datos}

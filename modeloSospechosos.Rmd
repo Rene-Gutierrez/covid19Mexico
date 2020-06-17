@@ -110,49 +110,8 @@ ggplot(data = datPlo,
        mapping = aes(x = date, y = value, fill = variable)) +
   geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
   scale_fill_gradient(low = "white", high = "#F8766D") +
-  ggtitle("Estimacion de Casos por Fecha de Ingreso (JNSD)") +
+  ggtitle("Estimacion de Positivos por Fecha de Ingreso (JNSD)") +
   xlab("Fecha de Ingreso")  +
   ylab("Casos") +
   theme_bw()
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

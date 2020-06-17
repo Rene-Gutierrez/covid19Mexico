@@ -50,9 +50,9 @@ filSuf <- 'COVID19MEXICO.csv'
   filNam <- gsub("-", "", filNam)
   filNam <- gsub("2020", "20", filNam)
   # Saves the Data Table
-  allDat <- fread(input = filNam,
-                  encoding = "UTF-8",
-                   colClasses=c(FECHA_INGRESO       = 'Date',
+  allDat <- fread(input      = filNam,
+                  encoding   = "UTF-8",
+                  colClasses = c(FECHA_INGRESO      = 'Date',
                                 FECHA_ACTUALIZACION = 'Date',
                                 FECHA_SINTOMAS      = 'Date',
                                 RESULTADO           = 'factor'))
@@ -64,9 +64,9 @@ for(i in 1:numDay){
   filNam <- gsub("-", "", filNam)
   filNam <- gsub("2020", "20", filNam)
   # Saves the Data Table
-  dataMex <- fread(input = filNam,
-                   encoding = "UTF-8",
-                   colClasses=c(FECHA_INGRESO       = 'Date',
+  dataMex <- fread(input      = filNam,
+                   encoding   = "UTF-8",
+                   colClasses = c(FECHA_INGRESO       = 'Date',
                                 FECHA_ACTUALIZACION = 'Date',
                                 FECHA_SINTOMAS      = 'Date',
                                 RESULTADO           = 'factor'))
@@ -92,6 +92,12 @@ allDat$FECHA_DEF <- as.Date(allDat$FECHA_DEF)
 res <- allDat$RESULTADO
 levels(res) <- c("Positivo", "Negativo", "Sospechoso")
 allDat$RESULTADO <- res
+### Adds Week of the Year Variable
+dataMex[, weekYear := week(FECHA_INGRESO)]
+dataMex[, weekYearSin := week(FECHA_SINTOMAS)]
+dataMex[, weekYearDef := week(FECHA_DEF)]
+allDat[, weekYear := week(FECHA_INGRESO)]
+allDat[, weekYearAct := week(FECHA_ACTUALIZACION)]
 ```
 
 
@@ -110,6 +116,19 @@ ggplot(data = datPlo,
   ylab("Pruebas")
 ```
 
+```{r Pruebas por Semana}
+datPlo <- dataMex[FECHA_INGRESO > "2020-01-01",
+                  .N,
+                  by = .(weekYear, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYear, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  ggtitle("Pruebas Realizadas") +
+  xlab("Semana de Ingreso")  +
+  ylab("Pruebas")
+```
+
 ```{r Pruebas por Dia Porcentaje}
 datPlo <- dataMex[FECHA_INGRESO > "2020-01-01", .N, by = .(FECHA_INGRESO, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -118,6 +137,17 @@ ggplot(data = datPlo,
   geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
   ggtitle("Pruebas Realizadas") +
   xlab("Fecha de Ingreso")  +
+  ylab("Proporcion")
+```
+
+```{r Pruebas por Semana Porcentaje}
+datPlo <- dataMex[FECHA_INGRESO > "2020-01-01", .N, by = .(weekYear, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYear, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  ggtitle("Pruebas Realizadas") +
+  xlab("Semana de Ingreso")  +
   ylab("Proporcion")
 ```
 
@@ -134,6 +164,21 @@ ggplot(data = datPlo,
   xlab("Fecha de Ingreso")  +
   ylab("Proporcion")
 ```
+
+```{r Pruebas por Semana Porcentaje (Sin Sospechosos)}
+datPlo <- dataMex[RESULTADO != "Sospechoso" & FECHA_INGRESO > "2020-01-01",
+                  .N,
+                  by = .(weekYear, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYear, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  scale_fill_manual(values = c("#F8766D", "#00BA38")) +
+  ggtitle("Pruebas Realizadas (Sin Sospechosos)") +
+  xlab("Semana de Ingreso")  +
+  ylab("Proporcion")
+```
+
 
 ```{r Pruebas por Dia JNSD}
 datPlo <- dataMex[FECHA_INGRESO >= "2020-03-23" & FECHA_INGRESO > "2020-01-01",
@@ -178,10 +223,40 @@ ggplot(data = datPlo,
   ylab("Proporcion")
 ```
 
+```{r Proporcion Positivos Y Negativos Fecha de Actualizacion}
+datPlo <- allDat[RESULTADO != "Sospechoso",
+                 .N,
+                 by = .(FECHA_ACTUALIZACION, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_ACTUALIZACION, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  scale_fill_manual(values = c("#F8766D", "#00BA38")) +
+  ggtitle("Casos Totales Positivos y Negativos por Fecha de Actualizacion") +
+  xlab("Fecha de Actualizacion")  +
+  ylab("Total Casos")
+```
+
+```{r Proporcion Positivos Y Negativos Fecha de Actualizacion}
+datPlo <- allDat[RESULTADO != "Sospechoso",
+                 .N,
+                 by = .(FECHA_ACTUALIZACION, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_ACTUALIZACION, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  scale_fill_manual(values = c("#F8766D", "#00BA38")) +
+  ggtitle("Proporcion Totales Positivos y Negativos por Fecha de Actualizacion") +
+  xlab("Fecha de Actualizacion")  +
+  ylab("Proporcion")
+```
+
+
+
 ## Evolucion de las Pruebas
 
 ```{r Pruebas por Dia (Ultimos 30 Dias)}
-datPlo <- allDat[FECHA_INGRESO > datTod - 56 & FECHA_ACTUALIZACION > datTod - 10,
+datPlo <- allDat[FECHA_INGRESO > datTod - 100,
                  .N,
                  by = .(FECHA_INGRESO, FECHA_ACTUALIZACION)]
 datPlo <- datPlo[order(FECHA_INGRESO, -FECHA_ACTUALIZACION)]
@@ -192,6 +267,20 @@ ggplot(data = datPlo,
   xlab("Fecha de Ingreso")  +
   ylab("Numero de Pruebas Realizadas")
 ```
+
+```{r Evolucion de Pruebas por Semana}
+datPlo <- allDat[FECHA_INGRESO > "2020-01-01",
+                 .N,
+                 by = .(weekYear, FECHA_ACTUALIZACION)]
+datPlo <- datPlo[order(weekYear, -FECHA_ACTUALIZACION)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYear, y = N, fill = FECHA_ACTUALIZACION)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width=0.8)   +
+  ggtitle("Pruebas Realizadas") +
+  xlab("Semana de Ingreso")  +
+  ylab("Numero de Pruebas Realizadas")
+```
+
 
 ```{r Pruebas por Dia (Ultimos 30 Dias JNSD)}
 datPlo <- allDat[FECHA_INGRESO >= datJNSD & FECHA_ACTUALIZACION > datTod - 10,
@@ -207,8 +296,23 @@ ggplot(data = datPlo,
   theme(legend.position = "none")
 ```
 
+```{r Evolucion Pruebas por Semana Serie}
+datPlo <- allDat[FECHA_INGRESO >= datJNSD,
+                 .N,
+                 by = .(weekYear, FECHA_ACTUALIZACION)]
+datPlo <- datPlo[order(weekYear, -FECHA_ACTUALIZACION)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYear, y = N, fill = FECHA_ACTUALIZACION)) +
+  geom_bar(stat = "identity", position = position_dodge2(width = 1), width=0.8)   +
+  ggtitle("Pruebas Realizadas") +
+  xlab("Semana de Ingreso")  +
+  ylab("Numero de Pruebas Realizadas") + 
+  theme(legend.position = "none")
+```
+
+
 ```{r Pruebas por Dia y Resultado (Ultimos 15 Dias)}
-datPlo <- allDat[FECHA_INGRESO > datTod - 28 & FECHA_ACTUALIZACION > datTod - 10 & RESULTADO != "Sospechoso",
+datPlo <- allDat[FECHA_INGRESO > datTod - 28 & RESULTADO != "Sospechoso",
                  .N,
                  by = .(FECHA_INGRESO, FECHA_ACTUALIZACION, RESULTADO)]
 datPlo <- datPlo[order(FECHA_INGRESO, -FECHA_ACTUALIZACION)]
@@ -222,6 +326,21 @@ ggplot(data = datPlo,
   theme(legend.position = "none")
 ```
 
+```{r Pruebas por Semana y Resultado}
+datPlo <- allDat[FECHA_INGRESO > "2020-01-01" & RESULTADO != "Sospechoso",
+                 .N,
+                 by = .(weekYear, FECHA_ACTUALIZACION, RESULTADO)]
+datPlo <- datPlo[order(weekYear, -FECHA_ACTUALIZACION)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYear, y = N, fill = FECHA_ACTUALIZACION)) +
+  geom_bar(stat = "identity", position = "dodge")   +
+  ggtitle("Casos Por Semana y Resultado") +
+  xlab("Semana de Ingreso")  +
+  ylab("Numero de Casos") +
+  facet_wrap(~ RESULTADO) + 
+  theme(legend.position = "none")
+```
+  
 ```{r Sospechosos por Fecha de Ingreso y Actualizacion (Ultimos 28 Dias)}
 datPlo <- allDat[FECHA_INGRESO > datTod - 28 & FECHA_ACTUALIZACION > datTod - 10 & RESULTADO == "Sospechoso",
                  .N,
@@ -232,6 +351,21 @@ ggplot(data = datPlo,
   geom_bar(stat = "identity", position = "dodge2")   +
   ggtitle("Casos Por Dia y Resultado") +
   xlab("Fecha de Ingreso")  +
+  ylab("Numero de Casos") +
+  facet_wrap(~ RESULTADO) + 
+  theme(legend.position = "none")
+```
+
+```{r Sospechosos Restantes por Semana de Ingreso y Actualizacion}
+datPlo <- allDat[FECHA_INGRESO > "2020-01-01" & RESULTADO == "Sospechoso",
+                 .N,
+                 by = .(weekYear, FECHA_ACTUALIZACION, RESULTADO)]
+datPlo <- datPlo[order(weekYear, -FECHA_ACTUALIZACION)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYear, y = N, fill = FECHA_ACTUALIZACION)) +
+  geom_bar(stat = "identity", position = "dodge2")   +
+  ggtitle("Casos Por Semana y Resultado") +
+  xlab("Semana de Ingreso")  +
   ylab("Numero de Casos") +
   facet_wrap(~ RESULTADO) + 
   theme(legend.position = "none")
@@ -253,6 +387,51 @@ ggplot(data = datPlo,
   theme_bw()
 ```
 
+```{r Casos Semanales Sin Sospechosos}
+datPlo <- dataMex[RESULTADO != "Negativo"  & FECHA_INGRESO > "2020-01-01",
+                  .N,
+                  by = .(weekYear, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYear, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  ggtitle("Casos por Semana de Ingreso") +
+  xlab("Semana de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+
+```{r Casos Por Fecha de Sintomas}
+datPlo <- dataMex[RESULTADO != "Negativo"  & FECHA_SINTOMAS > "2020-01-01",
+                  .N,
+                  by = .(FECHA_SINTOMAS, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_SINTOMAS, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  ggtitle("Casos por Fecha de Sintomas") +
+  xlab("Fecha de Sintomas")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+```{r Casos Por Semana de Sintomas}
+datPlo <- dataMex[RESULTADO != "Negativo"  & FECHA_SINTOMAS > "2020-01-01",
+                  .N,
+                  by = .(weekYearSin, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYearSin, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  ggtitle("Casos por Semana de Inicio de Sintomas") +
+  xlab("Semana de Inicio de Sintomas")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+
+
 ```{r Casos por Dia por Dia JNSD}
 datPlo <- dataMex[RESULTADO != "Negativo" & FECHA_INGRESO >= "2020-03-23",
                   .N,
@@ -270,7 +449,7 @@ ggplot(data = datPlo,
 # Muertes
 
 ```{r Muertes por Dia de Defuncion}
-datPlo <- dataMex[!is.na(FECHA_DEF),
+datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_DEF > "2020-01-01",
                   .N,
                   by = .(FECHA_DEF, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -283,8 +462,50 @@ ggplot(data = datPlo,
   theme_bw()
 ```
 
-```{r Proporcion Muertes por Dia de Defuncion}
+```{r Muertes por Semana de Defuncion}
+datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_DEF > "2020-01-01",
+                  .N,
+                  by = .(weekYearDef, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYearDef, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  ggtitle("Muertes por Semana de Defuncion") +
+  xlab("Semana de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+```{r Muertes por Dia de Sintomas}
 datPlo <- dataMex[!is.na(FECHA_DEF),
+                  .N,
+                  by = .(FECHA_SINTOMAS, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_SINTOMAS, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  ggtitle("Muertes por Fecha de Sintomas") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+```{r Muertes por Semana de Sintomas}
+datPlo <- dataMex[!is.na(FECHA_DEF),
+                  .N,
+                  by = .(weekYearSin, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYearSin, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
+  ggtitle("Muertes por Semana de Sintomas") +
+  xlab("Semana de Sintomas")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+```{r Proporcion Muertes por Dia de Defuncion}
+datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_DEF > "2020-01-01",
                   .N,
                   by = .(FECHA_DEF, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -297,8 +518,52 @@ ggplot(data = datPlo,
   theme_bw()
 ```
 
+```{r Proporcion Muertes por Semana de Defuncion}
+datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_DEF > "2020-01-01",
+                  .N,
+                  by = .(weekYearDef, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYearDef, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  ggtitle("Proporcion de Muertes por Semana de Defuncion") +
+  xlab("Semana de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+
+```{r Proporcion Muertes por Dia de Sintomas}
+datPlo <- dataMex[!is.na(FECHA_DEF),
+                  .N,
+                  by = .(FECHA_SINTOMAS, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_SINTOMAS, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  ggtitle("Proporcion de Muertes por Fecha de Sintomas") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+
+```{r Proporcion Muertes por Semana de Sintomas}
+datPlo <- dataMex[!is.na(FECHA_DEF),
+                  .N,
+                  by = .(weekYearSin, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYearSin, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  ggtitle("Proporcion de Muertes por Semana de Sintomas") +
+  xlab("Semana de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
 ```{r Proporcion de Muertes por Dia de Defuncion (Sin Sospechosos)}
-datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO != "Sospechoso",
+datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO != "Sospechoso" & FECHA_DEF > "2020-01-01",
                   .N,
                   by = .(FECHA_DEF, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -312,8 +577,54 @@ ggplot(data = datPlo,
   theme_bw()
 ```
 
+```{r Proporcion de Muertes por Semana de Defuncion (Sin Sospechosos)}
+datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO != "Sospechoso",
+                  .N,
+                  by = .(weekYearDef, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYearDef, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  scale_fill_manual(values = c("#F8766D", "#00BA38")) +
+  ggtitle("Muertes por Semana de Defuncion") +
+  xlab("Semana de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+```{r Proporcion de Muertes por Dia de Sintomas (Sin Sospechosos)}
+datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO != "Sospechoso",
+                  .N,
+                  by = .(FECHA_SINTOMAS, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_SINTOMAS, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  scale_fill_manual(values = c("#F8766D", "#00BA38")) +
+  ggtitle("Muertes por Fecha de Sintomas") +
+  xlab("Fecha de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
+
+```{r Proporcion de Muertes por Semana de Sintomas (Sin Sospechosos)}
+datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO != "Sospechoso",
+                  .N,
+                  by = .(weekYearSin, RESULTADO)]
+datPlo <- datPlo[order(RESULTADO)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYearSin, y = N, fill = RESULTADO)) +
+  geom_bar(stat = "identity", position = position_fill(reverse = TRUE))   +
+  scale_fill_manual(values = c("#F8766D", "#00BA38")) +
+  ggtitle("Muertes por Semana de Sintomas Sin Sospechosos") +
+  xlab("Semana de Ingreso")  +
+  ylab("Casos") +
+  theme_bw()
+```
+
 ```{r Muertes por Dia de Defuncion (JNSD)}
-datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_INGRESO >= "2020-03-23",
+datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_INGRESO >= "2020-03-23" & FECHA_DEF > "2020-01-01",
                   .N,
                   by = .(FECHA_DEF, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -321,13 +632,13 @@ ggplot(data = datPlo,
        mapping = aes(x = FECHA_DEF, y = N, fill = RESULTADO)) +
   geom_bar(stat = "identity", position = position_stack(reverse = TRUE))   +
   ggtitle("Muertes por Fecha de Defuncion (Jornada Nacional de Sana Distancia)") +
-  xlab("Fecha de Ingreso")  +
+  xlab("Fecha de Defuncion")  +
   ylab("Casos") +
   theme_bw()
 ```
 
 ```{r Proporcion de Muertes por Dia de Defuncion (JNSD)}
-datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_INGRESO >= "2020-03-23",
+datPlo <- dataMex[!is.na(FECHA_DEF) & FECHA_INGRESO >= "2020-03-23" & FECHA_DEF > "2020-01-01",
                   .N,
                   by = .(FECHA_DEF, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -341,7 +652,7 @@ ggplot(data = datPlo,
 ```
 
 ```{r Proporcion de Muertes por Dia de Defuncion (JNSD Sin Sospechosos)}
-datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO != "Sospechoso" & FECHA_INGRESO >= "2020-03-23",
+datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO != "Sospechoso" & FECHA_INGRESO >= "2020-03-23" & FECHA_DEF > "2020-01-01",
                   .N,
                   by = .(FECHA_DEF, RESULTADO)]
 datPlo <- datPlo[order(RESULTADO)]
@@ -397,49 +708,38 @@ ggplot(data = datPlo,
   theme_bw()
 ```
 
-```{r Muertes Confirmadas Obesidad}
-datPlo <- allDat[FECHA_ACTUALIZACION == datTod & !is.na(FECHA_DEF),
+```{r Dias Entre la Fecha de Ingreso y Defuncion}
+datPlo <- dataMex[!is.na(FECHA_DEF) & RESULTADO == "Positivo", difDeaIng := FECHA_DEF - FECHA_INGRESO][!is.na(difDeaIng) & difDeaIng >= 0 & !is.na(FECHA_DEF) & RESULTADO == "Positivo",
                  .N,
-                 by = .(OBESIDAD, RESULTADO)]
+                 by = (difDeaIng)][
+                   order(difDeaIng)]
 ggplot(data = datPlo,
-       mapping = aes(x = EDAD, y = N)) +
+       mapping = aes(x = as.integer(difDeaIng), y = N)) +
   geom_bar(stat = "identity") +
-  ggtitle("Muertes por Edad (Sin Sospechosas)") +
-  xlab("Edad")  +
+  ggtitle("Dias Entre la Fecha de Ingreso y Defuncion") +
+  xlab("Dias")  +
   ylab("Numero de Muertes") +
   theme_bw()
 ```
 
+```{r Sospechosos Acumulados}
+datPlo <- allDat[RESULTADO == "Sospechoso", .N, by = .(FECHA_ACTUALIZACION)]
+ggplot(data = datPlo,
+       mapping = aes(x = FECHA_ACTUALIZACION, y = N)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Sospechosos Acumulados") +
+  xlab("Fecha de Actualizacion")  +
+  ylab("Numero de Sospechosos") +
+  theme_bw()
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```{r Sospechosos Acumulados por Semana}
+datPlo <- allDat[RESULTADO == "Sospechoso", .N, by = .(weekYearAct)]
+ggplot(data = datPlo,
+       mapping = aes(x = weekYearAct, y = N)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Sospechosos Acumulados por Semana") +
+  xlab("Semana de Actualizacion")  +
+  ylab("Numero de Sospechosos") +
+  theme_bw()
+```
